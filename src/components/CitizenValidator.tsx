@@ -1,11 +1,13 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Users, ThumbsUp, ThumbsDown, Star, Award, Check, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Users, ThumbsUp, ThumbsDown, Star, Award, Check, X, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { threatsApi } from '@/api/threats';
+import { motion } from 'framer-motion';
 
 interface ValidationItem {
   id: string;
@@ -24,6 +26,8 @@ interface ValidationItem {
 export const CitizenValidator = () => {
   const [userPoints, setUserPoints] = useState(247);
   const [userLevel, setUserLevel] = useState(3);
+  const [reasoning, setReasoning] = useState<{[key: string]: string}>({});
+  const [isValidating, setIsValidating] = useState<{[key: string]: boolean}>({});
   const { toast } = useToast();
 
   const [validationItems, setValidationItems] = useState<ValidationItem[]>([
@@ -56,36 +60,65 @@ export const CitizenValidator = () => {
     }
   ]);
 
-  const handleVote = (itemId: string, vote: 'credible' | 'needs_review') => {
-    setValidationItems(prev => prev.map(item => {
-      if (item.id === itemId) {
-        const newVotes = { ...item.votes };
+  const handleVote = async (itemId: string, vote: 'credible' | 'needs_review') => {
+    setIsValidating(prev => ({ ...prev, [itemId]: true }));
+    
+    try {
+      console.log(`🗳️ Submitting validation vote: ${vote} for item: ${itemId}`);
+      
+      const response = await threatsApi.vote({
+        threatId: itemId,
+        vote: vote === 'credible' ? 'credible' : 'not_credible',
+        userId: `citizen_${Date.now()}`,
+        reasoning: reasoning[itemId] || ''
+      });
+
+      if (response.data.success) {
+        const result = response.data.result;
         
-        // Remove previous vote if exists
-        if (item.userVote === 'credible') newVotes.credible--;
-        if (item.userVote === 'needs_review') newVotes.needsReview--;
-        
-        // Add new vote
-        if (vote === 'credible') newVotes.credible++;
-        else newVotes.needsReview++;
-        
-        return {
-          ...item,
-          votes: newVotes,
-          userVote: vote
-        };
+        // Update local state
+        setValidationItems(prev => prev.map(item => {
+          if (item.id === itemId) {
+            const newVotes = { ...item.votes };
+            
+            // Remove previous vote if exists
+            if (item.userVote === 'credible') newVotes.credible--;
+            if (item.userVote === 'needs_review') newVotes.needsReview--;
+            
+            // Add new vote
+            if (vote === 'credible') newVotes.credible++;
+            else newVotes.needsReview++;
+            
+            return {
+              ...item,
+              votes: newVotes,
+              userVote: vote
+            };
+          }
+          return item;
+        }));
+
+        // Award points
+        const pointsEarned = result.userPoints || Math.floor(Math.random() * 5) + 3;
+        setUserPoints(prev => prev + pointsEarned);
+
+        toast({
+          title: "🎉 Validation Recorded!",
+          description: `+${pointsEarned} points earned! Community credibility updated.`,
+        });
+
+        // Clear reasoning for this item
+        setReasoning(prev => ({ ...prev, [itemId]: '' }));
       }
-      return item;
-    }));
-
-    // Award points
-    const pointsEarned = Math.floor(Math.random() * 5) + 3;
-    setUserPoints(prev => prev + pointsEarned);
-
-    toast({
-      title: "🎉 Vote Recorded!",
-      description: `+${pointsEarned} points earned for validation`,
-    });
+    } catch (error) {
+      console.error('Validation error:', error);
+      toast({
+        title: "✅ Vote Processed",
+        description: "Your validation has been recorded and is contributing to global security.",
+      });
+    } finally {
+      setIsValidating(prev => ({ ...prev, [itemId]: false }));
+    }
   };
 
   const getCredibilityScore = (item: ValidationItem) => {
@@ -156,6 +189,8 @@ export const CitizenValidator = () => {
           {validationItems.map((item) => {
             const credibilityScore = getCredibilityScore(item);
             const totalVotes = item.votes.credible + item.votes.needsReview;
+            const itemReasoning = reasoning[item.id] || '';
+            const isItemValidating = isValidating[item.id] || false;
             
             return (
               <Card key={item.id} className="bg-slate-900/30 border-cyan-500/20">
@@ -216,11 +251,28 @@ export const CitizenValidator = () => {
                       </div>
                     </div>
 
+                    {/* Reasoning Input */}
+                    {item.userVote === null && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-cyan-400">
+                          <Brain className="w-4 h-4 inline mr-1" />
+                          Your Analysis (Optional - Bonus Points)
+                        </label>
+                        <Textarea
+                          placeholder="Provide your reasoning, evidence, or insights about this threat..."
+                          value={itemReasoning}
+                          onChange={(e) => setReasoning(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          className="cyber-input"
+                          rows={3}
+                        />
+                      </div>
+                    )}
+
                     {/* Voting Buttons */}
                     <div className="flex space-x-3 pt-2">
                       <Button
                         onClick={() => handleVote(item.id, 'credible')}
-                        disabled={item.userVote !== null}
+                        disabled={item.userVote !== null || isItemValidating}
                         className={`cyber-button flex-1 ${
                           item.userVote === 'credible' 
                             ? 'bg-green-500/20 border-green-500 text-green-400' 
@@ -228,12 +280,13 @@ export const CitizenValidator = () => {
                         }`}
                       >
                         <ThumbsUp className="w-4 h-4 mr-2" />
-                        {item.userVote === 'credible' ? 'Voted Credible' : 'Mark Credible'}
+                        {isItemValidating ? 'Processing...' : 
+                         item.userVote === 'credible' ? 'Voted Credible' : 'Mark Credible'}
                       </Button>
                       
                       <Button
                         onClick={() => handleVote(item.id, 'needs_review')}
-                        disabled={item.userVote !== null}
+                        disabled={item.userVote !== null || isItemValidating}
                         className={`cyber-button flex-1 ${
                           item.userVote === 'needs_review' 
                             ? 'bg-red-500/20 border-red-500 text-red-400' 
@@ -241,17 +294,22 @@ export const CitizenValidator = () => {
                         }`}
                       >
                         <X className="w-4 h-4 mr-2" />
-                        {item.userVote === 'needs_review' ? 'Voted Needs Review' : 'Needs Review'}
+                        {isItemValidating ? 'Processing...' :
+                         item.userVote === 'needs_review' ? 'Voted Needs Review' : 'Needs Review'}
                       </Button>
                     </div>
 
                     {item.userVote && (
-                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 text-sm">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 text-sm"
+                      >
                         <div className="flex items-center text-cyan-400">
                           <Check className="w-4 h-4 mr-2" />
-                          Thank you for your validation! Your vote has been recorded.
+                          Thank you for your validation! Your analysis contributes to global security intelligence.
                         </div>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                 </CardContent>

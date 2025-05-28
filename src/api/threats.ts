@@ -18,8 +18,8 @@ export const threatsApi = {
   getTrends: () => 
     api.get('/trends'),
   
-  vote: (voteData: { threatId: string; vote: 'credible' | 'not_credible'; userId?: string }) =>
-    api.post('/vote', voteData),
+  vote: (voteData: { threatId: string; vote: 'credible' | 'not_credible'; userId?: string; reasoning?: string }) =>
+    api.post('/validate', voteData),
   
   verify: (verifyData: { threatId?: string; claim: string; userId?: string }) =>
     api.post('/verify', verifyData),

@@ -1,14 +1,29 @@
 
 const axios = require('axios');
-require('../config/environment'); // Ensure environment is loaded
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
+
+// Force reload environment variables at the module level
+const envPath = path.join(__dirname, '../.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+  console.log('🔧 SonarClient: Environment variables reloaded from:', envPath);
+}
 
 class SonarClient {
   constructor() {
-    // Force reload environment variables
+    // Force reload environment variables again in constructor
     this.apiKey = process.env.OPENROUTER_API_KEY?.trim();
     this.baseURL = 'https://openrouter.ai/api/v1/chat/completions';
     
-    console.log('🔑 Checking OpenRouter API Key:', this.apiKey ? `Found (${this.apiKey.substring(0, 10)}...)` : 'Missing');
+    console.log('🔑 SonarClient API Key Check:', this.apiKey ? `Found (${this.apiKey.substring(0, 15)}...)` : 'Missing');
+    console.log('🔑 Full environment check:', {
+      hasKey: !!this.apiKey,
+      keyLength: this.apiKey?.length || 0,
+      envPath: envPath,
+      envExists: fs.existsSync(envPath)
+    });
     
     if (!this.apiKey) {
       console.error('❌ OPENROUTER_API_KEY not found in environment variables');
@@ -70,6 +85,7 @@ Please provide:
       
       if (error.response?.status === 401) {
         console.error('❌ Authentication failed - check OPENROUTER_API_KEY');
+        console.error('🔑 Current API Key:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'MISSING');
       }
       
       throw new Error(`Sonar reasoning failed: ${error.response?.data?.error?.message || error.message}`);
