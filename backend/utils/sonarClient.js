@@ -1,20 +1,26 @@
 
 const axios = require('axios');
+require('../config/environment'); // Ensure environment is loaded
 
 class SonarClient {
   constructor() {
-    this.apiKey = process.env.OPENROUTER_API_KEY;
+    // Force reload environment variables
+    this.apiKey = process.env.OPENROUTER_API_KEY?.trim();
     this.baseURL = 'https://openrouter.ai/api/v1/chat/completions';
     
-    console.log('🔑 Checking OpenRouter API Key:', this.apiKey ? 'Found' : 'Missing');
+    console.log('🔑 Checking OpenRouter API Key:', this.apiKey ? `Found (${this.apiKey.substring(0, 10)}...)` : 'Missing');
     
     if (!this.apiKey) {
       console.error('❌ OPENROUTER_API_KEY not found in environment variables');
-      throw new Error('OPENROUTER_API_KEY not found in environment variables');
+      console.error('💡 Please check your .env file contains: OPENROUTER_API_KEY=your_key_here');
     }
   }
 
   async sonarReasoning(hypothesis, useCounter = false) {
+    if (!this.apiKey) {
+      throw new Error('OPENROUTER_API_KEY not found in environment variables');
+    }
+
     try {
       console.log('🧠 Starting Sonar reasoning analysis...');
       
@@ -71,6 +77,10 @@ Please provide:
   }
 
   async sonarDeepSearch(query, domains = [], citations = true) {
+    if (!this.apiKey) {
+      throw new Error('OPENROUTER_API_KEY not found in environment variables');
+    }
+
     try {
       console.log('🔍 Starting Sonar deep search...');
       

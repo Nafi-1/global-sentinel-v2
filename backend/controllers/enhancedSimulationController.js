@@ -38,12 +38,12 @@ class EnhancedSimulationController {
         id: uuidv4(),
         scenario: scenario,
         sonarAnalysis: sonarAnalysis,
-        flowchart: this.generateFlowchart(scenario),
-        mitigations: this.generateMitigations(scenario),
+        flowchart: EnhancedSimulationController.generateFlowchart(scenario),
+        mitigations: EnhancedSimulationController.generateMitigations(scenario),
         confidence: fallbackUsed ? Math.floor(Math.random() * 15) + 60 : Math.floor(Math.random() * 20) + 75,
-        verdict: this.generateVerdict(scenario, sonarAnalysis),
-        timeline: this.generateTimeline(scenario),
-        impact: this.generateImpact(scenario),
+        verdict: EnhancedSimulationController.generateVerdict(scenario, sonarAnalysis),
+        timeline: EnhancedSimulationController.generateTimeline(scenario),
+        impact: EnhancedSimulationController.generateImpact(scenario),
         sources: fallbackUsed ? [
           "Global Crisis Database",
           "Emergency Response Manual",
@@ -54,9 +54,9 @@ class EnhancedSimulationController {
           "Academic Crisis Simulation Models",
           "Government Response Frameworks"
         ],
-        supportingPoints: this.extractSupportingPoints(sonarAnalysis),
-        counterPoints: this.extractCounterPoints(sonarAnalysis),
-        deepAnalysisLinks: this.generateDeepAnalysisLinks(scenario),
+        supportingPoints: EnhancedSimulationController.extractSupportingPoints(sonarAnalysis),
+        counterPoints: EnhancedSimulationController.extractCounterPoints(sonarAnalysis),
+        deepAnalysisLinks: EnhancedSimulationController.generateDeepAnalysisLinks(scenario),
         usedSonar: !fallbackUsed,
         timestamp: new Date().toISOString()
       };

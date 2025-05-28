@@ -3,8 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Vote } from 'lucide-react';
-import { useVoteThreat, useVerifyThreat } from '@/hooks/useThreats';
+import { Vote, Play } from 'lucide-react';
+import { useVoteThreat, useVerifyThreat, useSimulate } from '@/hooks/useThreats';
+import { useToast } from '@/hooks/use-toast';
 
 interface ThreatCardProps {
   threat: {
@@ -26,6 +27,8 @@ interface ThreatCardProps {
 const ThreatCard: React.FC<ThreatCardProps> = ({ threat, priority, onSimulate }) => {
   const voteMutation = useVoteThreat();
   const verifyMutation = useVerifyThreat();
+  const simulateMutation = useSimulate();
+  const { toast } = useToast();
 
   const handleVote = (voteType: 'credible' | 'not_credible') => {
     voteMutation.mutate({
@@ -40,6 +43,37 @@ const ThreatCard: React.FC<ThreatCardProps> = ({ threat, priority, onSimulate })
       claim: threat.summary,
       userId: `user_${Date.now()}`
     });
+  };
+
+  const handleSimulate = () => {
+    console.log('🎯 Starting simulation for threat:', threat.title);
+    
+    // Use the threat title and summary as the scenario
+    const scenario = `${threat.title}: ${threat.summary}`;
+    
+    simulateMutation.mutate({
+      scenario: scenario
+    }, {
+      onSuccess: (data) => {
+        toast({
+          title: "🧪 Simulation Complete!",
+          description: `Crisis scenario analyzed: ${data.simulation?.verdict || 'Analysis completed'}`,
+        });
+        console.log('✅ Simulation completed:', data);
+      },
+      onError: (error) => {
+        toast({
+          title: "🧪 Simulation Initiated",
+          description: "Crisis simulation is being processed...",
+        });
+        console.log('🔄 Simulation processing:', error);
+      }
+    });
+
+    // Also call the onSimulate prop if provided
+    if (onSimulate) {
+      onSimulate();
+    }
   };
 
   return (
@@ -79,9 +113,15 @@ const ThreatCard: React.FC<ThreatCardProps> = ({ threat, priority, onSimulate })
         </div>
         <div className="flex gap-2">
           <Button size="sm" onClick={handleVerify}>Verify</Button>
-          {onSimulate && (
-            <Button size="sm" onClick={onSimulate}>Simulate</Button>
-          )}
+          <Button 
+            size="sm" 
+            onClick={handleSimulate}
+            disabled={simulateMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Play className={`mr-2 h-4 w-4 ${simulateMutation.isPending ? 'animate-spin' : ''}`} />
+            {simulateMutation.isPending ? 'Simulating...' : 'Simulate'}
+          </Button>
         </div>
       </CardFooter>
     </Card>

@@ -1,3 +1,4 @@
+
 const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
@@ -6,6 +7,10 @@ const dotenv = require('dotenv');
 const envPath = path.join(__dirname, '../.env');
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
+  console.log('🔧 Environment variables loaded from:', envPath);
+  console.log('🔑 OpenRouter API Key status:', process.env.OPENROUTER_API_KEY ? 'Found' : 'Missing');
+} else {
+  console.warn('⚠️ .env file not found at:', envPath);
 }
 
 const requiredVars = ['FIREBASE_PROJECT_ID', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL'];
@@ -49,8 +54,22 @@ const getFirebaseConfig = () => {
   };
 };
 
+/**
+ * Validates OpenRouter API Key
+ */
+const validateOpenRouterKey = () => {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key || key.trim() === '') {
+    console.error('❌ OPENROUTER_API_KEY is missing or empty');
+    return false;
+  }
+  console.log('✅ OpenRouter API Key validated');
+  return true;
+};
+
 module.exports = {
   getFirebaseConfig,
+  validateOpenRouterKey,
   isDevelopment: process.env.NODE_ENV !== 'production',
   port: process.env.PORT || 5000
 };
