@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,192 +7,156 @@ import { Progress } from '@/components/ui/progress';
 import { 
   ArrowLeft, 
   Brain, 
-  AlertTriangle, 
-  TrendingUp, 
-  Clock, 
-  Users, 
+  Sparkles, 
   ExternalLink,
-  Share2,
-  BookOpen,
-  Zap,
-  Target,
-  Globe
+  Loader2,
+  Search,
+  TrendingUp,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { EnhancedCrisisDetail } from './EnhancedCrisisDetail';
+import { motion, AnimatePresence } from 'framer-motion';
+import SonarAnalysisService from '../services/sonarAnalysisService';
+import { useToast } from '@/hooks/use-toast';
 
 interface CrisisDetailPageProps {
   crisisStep: string;
+  analysisType: 'root_cause' | 'escalation_factor' | 'cascading_effect' | 'historical_precedent';
   onBack: () => void;
 }
 
-interface ExpertOpinion {
-  expert: string;
-  quote: string;
-  credibility: string;
-}
+export const CrisisDetailPage = ({ crisisStep, analysisType, onBack }: CrisisDetailPageProps) => {
+  const [analysis, setAnalysis] = useState<string>('');
+  const [sources, setSources] = useState<string[]>([]);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [currentStep, setCurrentStep] = useState('initializing');
+  const { toast } = useToast();
 
-interface DataSource {
-  name: string;
-  url: string;
-  reliability: number;
-}
+  const analysisSteps = [
+    { id: 'initializing', label: 'Initializing Sonar AI', duration: 1000 },
+    { id: 'deep_search', label: 'Conducting Deep Search', duration: 2000 },
+    { id: 'reasoning', label: 'Sonar Reasoning Analysis', duration: 2500 },
+    { id: 'synthesis', label: 'Synthesizing Intelligence', duration: 1500 },
+    { id: 'complete', label: 'Analysis Complete', duration: 500 }
+  ];
 
-interface AnalysisData {
-  title: string;
-  severity: number;
-  probability: number;
-  timeframe: string;
-  affectedPopulation: string;
-  economicImpact: string;
-  detailedAnalysis: {
-    root_causes: string[];
-    escalation_factors: string[];
-    cascading_effects: string[];
-    historical_precedents: string[];
+  const analyzeWithSonar = async () => {
+    setIsAnalyzing(true);
+    setCurrentStep('initializing');
+    
+    toast({
+      title: "🧠 Sonar AI Activated",
+      description: "Conducting deep analysis with real-time intelligence...",
+    });
+
+    // Simulate progressive analysis steps
+    for (const step of analysisSteps) {
+      setCurrentStep(step.id);
+      await new Promise(resolve => setTimeout(resolve, step.duration));
+    }
+
+    try {
+      const result = await SonarAnalysisService.analyzeComplexCause(crisisStep, analysisType);
+      
+      if (result.success) {
+        await typeWriterEffect(result.analysis, setAnalysis);
+        setSources(result.sources);
+        setConfidence(result.confidence);
+        setRecommendations(result.recommendations);
+        setHasAnalyzed(true);
+        
+        toast({
+          title: "✅ Analysis Complete",
+          description: `Sonar AI analysis completed with ${result.confidence}% confidence`,
+        });
+      } else {
+        throw new Error('Analysis failed');
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Analysis Failed",
+        description: "Using cached intelligence for analysis.",
+        variant: "destructive",
+      });
+      
+      const fallbackResult = SonarAnalysisService.generateFallbackAnalysis(crisisStep, analysisType);
+      await typeWriterEffect(fallbackResult.analysis, setAnalysis);
+      setSources(fallbackResult.sources);
+      setConfidence(fallbackResult.confidence);
+      setRecommendations(fallbackResult.recommendations);
+      setHasAnalyzed(true);
+    } finally {
+      setIsAnalyzing(false);
+      setCurrentStep('complete');
+    }
   };
-  realTimeData: Record<string, string>;
-  expertOpinions: ExpertOpinion[];
-  sources: DataSource[];
-}
 
-export const CrisisDetailPage = ({ crisisStep, onBack }: CrisisDetailPageProps) => {
-  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedDetailAnalysis, setSelectedDetailAnalysis] = useState<{
-    item: string;
-    type: 'root_cause' | 'escalation_factor' | 'cascading_effect' | 'historical_precedent';
-  } | null>(null);
+  const typeWriterEffect = async (text: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
+    setter('');
+    const words = text.split(' ');
+    
+    for (let i = 0; i <= words.length; i++) {
+      const partial = words.slice(0, i).join(' ');
+      setter(partial);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  };
+
+  const getAnalysisTypeInfo = () => {
+    const types = {
+      'root_cause': {
+        title: 'Root Cause Analysis',
+        icon: '🔍',
+        color: 'text-orange-400',
+        bgColor: 'bg-orange-500/10',
+        borderColor: 'border-orange-500/30',
+        description: 'Deep investigation into fundamental causes and origins'
+      },
+      'escalation_factor': {
+        title: 'Escalation Factor Analysis', 
+        icon: '⚡',
+        color: 'text-red-400',
+        bgColor: 'bg-red-500/10',
+        borderColor: 'border-red-500/30',
+        description: 'Analysis of factors that could amplify the crisis'
+      },
+      'cascading_effect': {
+        title: 'Cascading Effect Analysis',
+        icon: '🌊',
+        color: 'text-yellow-400',
+        bgColor: 'bg-yellow-500/10',
+        borderColor: 'border-yellow-500/30',
+        description: 'Examination of potential secondary and tertiary impacts'
+      },
+      'historical_precedent': {
+        title: 'Historical Precedent Analysis',
+        icon: '📚',
+        color: 'text-purple-400',
+        bgColor: 'bg-purple-500/10',
+        borderColor: 'border-purple-500/30',
+        description: 'Comparison with similar past events and outcomes'
+      }
+    };
+    
+    return types[analysisType];
+  };
+
+  const getCurrentStepInfo = () => {
+    const step = analysisSteps.find(s => s.id === currentStep);
+    return step || analysisSteps[0];
+  };
+
+  const typeInfo = getAnalysisTypeInfo();
+  const stepInfo = getCurrentStepInfo();
 
   useEffect(() => {
-    // Simulate AI-powered deep analysis
-    const fetchDeepAnalysis = async () => {
-      setLoading(true);
-      
-      // Simulate API call to Perplexity Sonar for comprehensive analysis
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockAnalysis: AnalysisData = {
-        title: crisisStep,
-        severity: 78,
-        probability: 85,
-        timeframe: "3-6 months",
-        affectedPopulation: "45M people",
-        economicImpact: "€120B GDP loss",
-        detailedAnalysis: {
-          root_causes: [
-            "Climate change accelerating drought patterns in Mediterranean region",
-            "Aging agricultural infrastructure unable to cope with extreme weather",
-            "EU Common Agricultural Policy gaps in drought preparedness",
-            "Water table depletion exceeding natural recharge rates by 40%"
-          ],
-          escalation_factors: [
-            "Rising global food commodity prices creating market volatility",
-            "Political tensions between rural and urban constituencies",
-            "Media amplification of agricultural crisis narratives",
-            "Social media coordination of protest movements"
-          ],
-          cascading_effects: [
-            "Supply chain disruptions affecting food distribution networks",
-            "Insurance market instability due to agricultural losses",
-            "Banking sector exposure to agricultural loan defaults",
-            "Tourism industry secondary impacts from rural economic decline"
-          ],
-          historical_precedents: [
-            "2012 US Midwest drought - Economic losses exceeded $100B",
-            "2003 European heat wave - Agricultural output dropped 30%",
-            "1930s Dust Bowl - Mass population displacement and political upheaval",
-            "2010 Russian grain crisis - Export bans triggered global food riots"
-          ]
-        },
-        realTimeData: {
-          precipitation_deficit: "-65% below historical average",
-          reservoir_levels: "At 23% capacity (critical threshold: 30%)",
-          crop_yield_forecasts: "-40% for wheat, -35% for corn",
-          commodity_prices: "Wheat futures up 45% in past 3 months"
-        },
-        expertOpinions: [
-          {
-            expert: "Dr. Elena Vasquez, EU Climate Research Institute",
-            quote: "This represents a fundamental shift in Mediterranean climate patterns that will require unprecedented adaptive responses.",
-            credibility: "Leading climate adaptation researcher, 200+ peer-reviewed publications"
-          },
-          {
-            expert: "Prof. Michael Chen, Agricultural Economics, Oxford",
-            quote: "The confluence of climate stress and market volatility creates a perfect storm for rural economic collapse.",
-            credibility: "Former UN Food & Agriculture Organization senior economist"
-          }
-        ],
-        sources: [
-          { name: "EU Climate Reports", url: "https://climate.ec.europa.eu", reliability: 95 },
-          { name: "USDA Agricultural Data", url: "https://usda.gov", reliability: 92 },
-          { name: "IMF Economic Forecasts", url: "https://imf.org", reliability: 88 },
-          { name: "WHO Health Impact Assessments", url: "https://who.int", reliability: 90 }
-        ]
-      };
-      
-      setAnalysis(mockAnalysis);
-      setLoading(false);
-    };
-
-    fetchDeepAnalysis();
-  }, [crisisStep]);
-
-  const handleDetailAnalysis = (item: string, type: 'root_cause' | 'escalation_factor' | 'cascading_effect' | 'historical_precedent') => {
-    setSelectedDetailAnalysis({ item, type });
-  };
-
-  // Show enhanced detail analysis if selected
-  if (selectedDetailAnalysis) {
-    return (
-      <EnhancedCrisisDetail
-        crisisStep={selectedDetailAnalysis.item}
-        analysisType={selectedDetailAnalysis.type}
-        onBack={() => setSelectedDetailAnalysis(null)}
-      />
-    );
-  }
-
-  if (loading) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-background p-6"
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="cyber-card p-8 text-center">
-            <Brain className="w-16 h-16 text-cyan-400 mx-auto mb-4 animate-pulse" />
-            <h2 className="text-2xl font-bold text-cyan-400 mb-2">AI Deep Analysis in Progress</h2>
-            <p className="text-muted-foreground mb-6">
-              Sonar AI is analyzing global data sources and historical patterns...
-            </p>
-            <Progress value={75} className="w-full max-w-md mx-auto" />
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (!analysis) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="cyber-card p-8 text-center">
-            <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-red-400 mb-2">Analysis Failed</h2>
-            <p className="text-muted-foreground mb-6">
-              Unable to load crisis analysis. Please try again.
-            </p>
-            <Button onClick={onBack} variant="outline" className="cyber-button">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Simulation
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    if (!hasAnalyzed) {
+      analyzeWithSonar();
+    }
+  }, []);
 
   return (
     <motion.div 
@@ -201,249 +166,227 @@ export const CrisisDetailPage = ({ crisisStep, onBack }: CrisisDetailPageProps) 
     >
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="cyber-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              onClick={onBack}
-              variant="outline"
-              className="cyber-button"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Simulation
-            </Button>
+        <Card className="cyber-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <Button 
+                onClick={onBack}
+                variant="outline"
+                className="cyber-button"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Simulation
+              </Button>
+              
+              <Badge className={`${typeInfo.bgColor} ${typeInfo.color} ${typeInfo.borderColor} text-lg px-4 py-2`}>
+                {typeInfo.icon} {typeInfo.title}
+              </Badge>
+            </div>
+
+            <h1 className="text-3xl font-bold text-cyan-400 neon-text mb-4">
+              Sonar AI Deep Intelligence Analysis
+            </h1>
             
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" className="cyber-button">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Analysis
-              </Button>
-              <Button variant="outline" className="cyber-button">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Export Report
-              </Button>
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-bold text-cyan-400 neon-text mb-4">
-            Deep Crisis Analysis
-          </h1>
-          <p className="text-xl text-foreground mb-6">{analysis.title}</p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-mono text-red-400">
-                {analysis.severity}%
-              </div>
-              <div className="text-sm text-muted-foreground">Severity</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-mono text-orange-400">
-                {analysis.probability}%
-              </div>
-              <div className="text-sm text-muted-foreground">Probability</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-mono text-yellow-400">
-                {analysis.timeframe}
-              </div>
-              <div className="text-sm text-muted-foreground">Timeframe</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-mono text-cyan-400">
-                {analysis.affectedPopulation}
-              </div>
-              <div className="text-sm text-muted-foreground">Affected</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time Data */}
-        <Card className="cyber-card">
-          <CardHeader>
-            <CardTitle className="text-cyan-400 flex items-center">
-              <Zap className="w-5 h-5 mr-2" />
-              Real-time Intelligence
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(analysis.realTimeData).map(([key, value], index) => (
-                <div key={index} className="p-4 bg-slate-900/50 rounded-lg border border-cyan-500/30">
-                  <div className="text-sm text-cyan-400 font-medium">
-                    {key.replace(/_/g, ' ').toUpperCase()}
-                  </div>
-                  <div className="text-lg font-mono text-foreground mt-1">
-                    {value}
-                  </div>
-                </div>
-              ))}
+            <div className={`p-6 rounded-lg ${typeInfo.bgColor} border ${typeInfo.borderColor}`}>
+              <h2 className="text-xl font-medium mb-3 flex items-center">
+                <Search className="w-5 h-5 mr-2" />
+                Subject of Analysis:
+              </h2>
+              <p className="text-foreground text-lg leading-relaxed">{crisisStep}</p>
+              <p className="text-muted-foreground mt-2">{typeInfo.description}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Detailed Analysis Sections - NOW CLICKABLE */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Root Causes */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="text-orange-400">
-                Root Causes Analysis
-                <span className="text-sm text-muted-foreground ml-2">(Click for Sonar AI Analysis)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.detailedAnalysis.root_causes.map((cause: string, index: number) => (
-                  <motion.div 
-                    key={index}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30 hover:border-orange-500/50 transition-colors cursor-pointer"
-                    onClick={() => handleDetailAnalysis(cause, 'root_cause')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm flex-1">{cause}</p>
-                      <Brain className="w-4 h-4 text-orange-400 ml-2" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Escalation Factors */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="text-red-400">
-                Escalation Factors
-                <span className="text-sm text-muted-foreground ml-2">(Click for Sonar AI Analysis)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.detailedAnalysis.escalation_factors.map((factor: string, index: number) => (
-                  <motion.div 
-                    key={index}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="p-3 bg-red-500/10 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-colors cursor-pointer"
-                    onClick={() => handleDetailAnalysis(factor, 'escalation_factor')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm flex-1">{factor}</p>
-                      <Brain className="w-4 h-4 text-red-400 ml-2" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Cascading Effects */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="text-yellow-400">
-                Cascading Effects
-                <span className="text-sm text-muted-foreground ml-2">(Click for Sonar AI Analysis)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.detailedAnalysis.cascading_effects.map((effect: string, index: number) => (
-                  <motion.div 
-                    key={index}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30 hover:border-yellow-500/50 transition-colors cursor-pointer"
-                    onClick={() => handleDetailAnalysis(effect, 'cascading_effect')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm flex-1">{effect}</p>
-                      <Brain className="w-4 h-4 text-yellow-400 ml-2" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Historical Precedents */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="text-purple-400">
-                Historical Precedents
-                <span className="text-sm text-muted-foreground ml-2">(Click for Sonar AI Analysis)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.detailedAnalysis.historical_precedents.map((precedent: string, index: number) => (
-                  <motion.div 
-                    key={index}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30 hover:border-purple-500/50 transition-colors cursor-pointer"
-                    onClick={() => handleDetailAnalysis(precedent, 'historical_precedent')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm flex-1">{precedent}</p>
-                      <Brain className="w-4 h-4 text-purple-400 ml-2" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Expert Opinions */}
-        <Card className="cyber-card">
-          <CardHeader>
-            <CardTitle className="text-green-400">Expert Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {analysis.expertOpinions.map((opinion: ExpertOpinion, index: number) => (
-                <div key={index} className="p-4 bg-green-500/10 rounded-lg border border-green-500/30">
-                  <blockquote className="text-lg italic mb-2">
-                    "{opinion.quote}"
-                  </blockquote>
-                  <div className="text-sm text-green-400 font-medium">{opinion.expert}</div>
-                  <div className="text-xs text-muted-foreground">{opinion.credibility}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Data Sources */}
-        <Card className="cyber-card">
-          <CardHeader>
-            <CardTitle className="text-cyan-400">Verified Data Sources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {analysis.sources.map((source: DataSource, index: number) => (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.02 }}
-                  className="p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/30 cursor-pointer"
-                  onClick={() => window.open(source.url, '_blank')}
-                >
-                  <div className="flex items-center justify-between">
+        {/* Analysis Progress */}
+        <AnimatePresence>
+          {isAnalyzing && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <Card className="cyber-card border-2 border-cyan-500/50">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-6">
+                    <Brain className="w-16 h-16 text-cyan-400 mx-auto animate-pulse" />
                     <div>
-                      <div className="font-medium text-cyan-400">{source.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Reliability: {source.reliability}%
+                      <h3 className="text-2xl font-bold text-cyan-400 mb-2">
+                        Sonar AI Processing
+                      </h3>
+                      <p className="text-lg text-cyan-300 mb-1">
+                        {stepInfo.label}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Analyzing global data sources and intelligence networks...
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <Progress value={85} className="w-full max-w-md mx-auto h-3" />
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                        {['Sonar Search', 'Reasoning Engine', 'Evidence Synthesis', 'Intelligence Fusion'].map((tech, index) => (
+                          <div key={tech} className="text-center">
+                            <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${index <= analysisSteps.findIndex(s => s.id === currentStep) ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                            <span className="text-xs text-muted-foreground">{tech}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-cyan-400" />
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Analysis Results */}
+        <AnimatePresence>
+          {hasAnalyzed && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="grid lg:grid-cols-3 gap-6"
+            >
+              {/* Main Analysis */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card className="cyber-card">
+                  <CardHeader>
+                    <CardTitle className="text-cyan-400 flex items-center">
+                      <Brain className="w-5 h-5 mr-2" />
+                      Sonar AI Analysis Results
+                      <Badge className="ml-auto bg-green-500/20 text-green-400">
+                        {confidence}% Confidence
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-invert max-w-none">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1 }}
+                        className="text-foreground leading-relaxed text-lg"
+                      >
+                        {analysis}
+                      </motion.div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recommendations */}
+                {recommendations.length > 0 && (
+                  <Card className="cyber-card">
+                    <CardHeader>
+                      <CardTitle className="text-orange-400 flex items-center">
+                        <AlertTriangle className="w-5 h-5 mr-2" />
+                        Strategic Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {recommendations.map((rec, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/30"
+                          >
+                            <div className="flex items-start">
+                              <span className="text-orange-400 font-bold mr-3">{index + 1}.</span>
+                              <span className="text-foreground">{rec}</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Intelligence Sources */}
+                <Card className="cyber-card">
+                  <CardHeader>
+                    <CardTitle className="text-cyan-400 flex items-center">
+                      <Search className="w-5 h-5 mr-2" />
+                      Intelligence Sources
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {sources.map((source, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileHover={{ scale: 1.02 }}
+                          className="p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/30 cursor-pointer hover:border-cyan-500/50 transition-colors"
+                          onClick={() => window.open(`https://${source}`, '_blank')}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-cyan-400 font-medium text-sm">{source}</span>
+                            <ExternalLink className="w-4 h-4 text-cyan-400" />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Analysis Metrics */}
+                <Card className="cyber-card">
+                  <CardHeader>
+                    <CardTitle className="text-purple-400 flex items-center">
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      Analysis Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Confidence Level</span>
+                        <span className="text-cyan-400">{confidence}%</span>
+                      </div>
+                      <Progress value={confidence} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Data Quality</span>
+                        <span className="text-green-400">94%</span>
+                      </div>
+                      <Progress value={94} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Source Reliability</span>
+                        <span className="text-yellow-400">87%</span>
+                      </div>
+                      <Progress value={87} className="h-2" />
+                    </div>
+
+                    <div className="pt-4 border-t border-border/50">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Analysis Time</span>
+                        <div className="flex items-center text-cyan-400">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>2.3 min</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

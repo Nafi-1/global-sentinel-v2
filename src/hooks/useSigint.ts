@@ -1,14 +1,21 @@
 
 import { useMutation } from '@tanstack/react-query';
-import { sigintApi } from '../api/threats';
+import { threatsApi } from '../api/threats';
 import { useToast } from '@/hooks/use-toast';
+
+interface SigintResponse {
+  data?: {
+    threatsFound?: number;
+    success?: boolean;
+  };
+}
 
 export const useSigintScraping = () => {
   const { toast } = useToast();
 
   const rssScrapeMutation = useMutation({
-    mutationFn: () => sigintApi.testRssScrape(),
-    onSuccess: (response) => {
+    mutationFn: () => threatsApi.sigintApi.testRssScrape(),
+    onSuccess: (response: SigintResponse) => {
       toast({
         title: "📡 RSS Scraping Complete",
         description: `Successfully scraped ${response.data?.threatsFound || 0} threats from RSS feeds`,
@@ -24,8 +31,8 @@ export const useSigintScraping = () => {
   });
 
   const apiScrapeMutation = useMutation({
-    mutationFn: () => sigintApi.testApiScrape(),
-    onSuccess: (response) => {
+    mutationFn: () => threatsApi.sigintApi.testApiScrape(),
+    onSuccess: (response: SigintResponse) => {
       toast({
         title: "🔗 API Scraping Complete",
         description: `Successfully scraped ${response.data?.threatsFound || 0} threats from API sources`,
@@ -41,8 +48,8 @@ export const useSigintScraping = () => {
   });
 
   const htmlScrapeMutation = useMutation({
-    mutationFn: () => sigintApi.testHtmlScrape(),
-    onSuccess: (response) => {
+    mutationFn: () => threatsApi.sigintApi.testHtmlScrape(),
+    onSuccess: (response: SigintResponse) => {
       toast({
         title: "🕸️ HTML Scraping Complete",
         description: `Successfully scraped ${response.data?.threatsFound || 0} threats from web sources`,
@@ -58,8 +65,8 @@ export const useSigintScraping = () => {
   });
 
   const redditScrapeMutation = useMutation({
-    mutationFn: () => sigintApi.testRedditScrape(),
-    onSuccess: (response) => {
+    mutationFn: () => threatsApi.sigintApi.testRedditScrape(),
+    onSuccess: (response: SigintResponse) => {
       toast({
         title: "🟠 Reddit Scraping Complete", 
         description: `Successfully scraped ${response.data?.threatsFound || 0} threats from Reddit`,

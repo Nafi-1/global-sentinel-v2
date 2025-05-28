@@ -1,9 +1,9 @@
 
 const express = require('express');
-const SimulationController = require('../controllers/simulationController');
+const EnhancedSimulationController = require('../controllers/enhancedSimulationController');
 const router = express.Router();
 
-// POST /api/simulate - Run crisis simulation (legacy endpoint)
-router.post('/', SimulationController.runSimulation);
+// POST /api/simulate - Run enhanced crisis simulation with Sonar
+router.post('/', EnhancedSimulationController.runLiveSimulation);
 
 module.exports = router;

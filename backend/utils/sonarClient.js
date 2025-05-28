@@ -6,13 +6,18 @@ class SonarClient {
     this.apiKey = process.env.OPENROUTER_API_KEY;
     this.baseURL = 'https://openrouter.ai/api/v1/chat/completions';
     
+    console.log('🔑 Checking OpenRouter API Key:', this.apiKey ? 'Found' : 'Missing');
+    
     if (!this.apiKey) {
+      console.error('❌ OPENROUTER_API_KEY not found in environment variables');
       throw new Error('OPENROUTER_API_KEY not found in environment variables');
     }
   }
 
   async sonarReasoning(hypothesis, useCounter = false) {
     try {
+      console.log('🧠 Starting Sonar reasoning analysis...');
+      
       const systemPrompt = useCounter 
         ? 'You are a critical analyst. Challenge the given hypothesis with counter-evidence and alternative explanations. Provide logical counter-arguments and contradictory evidence.'
         : 'You are a crisis reasoning specialist. Analyze the hypothesis and provide logical reasoning chains, causal relationships, and evidence-based implications.';
@@ -26,6 +31,8 @@ Please provide:
 4. KEY FACTORS: Primary drivers and variables
 5. IMPLICATIONS: Potential consequences and outcomes`;
 
+      console.log('🔗 Making request to OpenRouter API...');
+      
       const response = await axios.post(this.baseURL, {
         model: 'perplexity/sonar-reasoning',
         messages: [
@@ -50,15 +57,23 @@ Please provide:
         }
       });
 
+      console.log('✅ Sonar reasoning completed successfully');
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error('🚨 Sonar Reasoning Error:', error.response?.status, error.response?.data || error.message);
+      
+      if (error.response?.status === 401) {
+        console.error('❌ Authentication failed - check OPENROUTER_API_KEY');
+      }
+      
       throw new Error(`Sonar reasoning failed: ${error.response?.data?.error?.message || error.message}`);
     }
   }
 
   async sonarDeepSearch(query, domains = [], citations = true) {
     try {
+      console.log('🔍 Starting Sonar deep search...');
+      
       const searchPrompt = `${query}
 
 Focus search on recent developments and credible sources. Include:
@@ -95,6 +110,7 @@ ${citations ? 'Include clickable source citations and references.' : ''}`;
         }
       });
 
+      console.log('✅ Sonar deep search completed successfully');
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error('🚨 Sonar Deep Search Error:', error.response?.status, error.response?.data || error.message);
