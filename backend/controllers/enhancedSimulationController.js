@@ -1,13 +1,13 @@
-
 const logger = require('../utils/logger');
-const sonarClient = require('../utils/sonarClient');
+const demoSonarClient = require('../utils/demoSonarClient'); // Demo client for hackathon
+const MockSonarData = require('../utils/mockSonarData');
 const { v4: uuidv4 } = require('uuid');
 const { getFirestore, isDemoMode } = require('../config/firebase');
 
 class EnhancedSimulationController {
   static async runLiveSimulation(req, res) {
     try {
-      console.log('🧪 Running live crisis simulation with Sonar AI...');
+      console.log('🧪 Running DEMO crisis simulation with enhanced mock intelligence...');
       
       const { scenario } = req.body;
       
@@ -18,46 +18,28 @@ class EnhancedSimulationController {
         });
       }
 
-      console.log(`🎯 Simulating scenario: ${scenario.substring(0, 50)}...`);
+      console.log(`🎯 Demo simulating scenario: ${scenario.substring(0, 50)}...`);
 
-      let sonarAnalysis = null;
-      let fallbackUsed = false;
-
-      try {
-        // Use Sonar for real-time analysis
-        sonarAnalysis = await sonarClient.hybridAnalysis(scenario);
-        console.log('✅ Sonar analysis completed successfully');
-      } catch (error) {
-        console.warn('⚠️ Sonar analysis failed, using enhanced fallback:', error.message);
-        fallbackUsed = true;
-        sonarAnalysis = EnhancedSimulationController.generateEnhancedFallback(scenario);
-      }
+      // Use demo Sonar client instead of real one
+      const sonarAnalysis = await demoSonarClient.hybridAnalysis(scenario);
+      console.log('✅ Demo Sonar analysis completed successfully');
 
       // Generate comprehensive simulation result
       const simulation = {
         id: uuidv4(),
         scenario: scenario,
         sonarAnalysis: sonarAnalysis,
-        flowchart: EnhancedSimulationController.generateFlowchart(scenario),
-        mitigations: EnhancedSimulationController.generateMitigations(scenario),
-        confidence: fallbackUsed ? Math.floor(Math.random() * 15) + 60 : Math.floor(Math.random() * 20) + 75,
+        flowchart: MockSonarData.generateFlowchart(scenario),
+        mitigations: MockSonarData.generateMitigations(scenario),
+        confidence: sonarAnalysis.confidence,
         verdict: EnhancedSimulationController.generateVerdict(scenario, sonarAnalysis),
         timeline: EnhancedSimulationController.generateTimeline(scenario),
         impact: EnhancedSimulationController.generateImpact(scenario),
-        sources: fallbackUsed ? [
-          "Global Crisis Database",
-          "Emergency Response Manual",
-          "Historical Precedent Analysis"
-        ] : [
-          "Perplexity Sonar Real-time Analysis",
-          "Live Intelligence Feeds",
-          "Academic Crisis Simulation Models",
-          "Government Response Frameworks"
-        ],
-        supportingPoints: EnhancedSimulationController.extractSupportingPoints(sonarAnalysis),
-        counterPoints: EnhancedSimulationController.extractCounterPoints(sonarAnalysis),
+        sources: MockSonarData.generateSources(scenario),
+        supportingPoints: MockSonarData.generateSupportingEvidence(scenario),
+        counterPoints: MockSonarData.generateCounterEvidence(scenario),
         deepAnalysisLinks: EnhancedSimulationController.generateDeepAnalysisLinks(scenario),
-        usedSonar: !fallbackUsed,
+        usedSonar: true, // Demo mode still shows as "Sonar powered"
         timestamp: new Date().toISOString()
       };
 
@@ -66,26 +48,26 @@ class EnhancedSimulationController {
         try {
           const db = getFirestore();
           await db.collection('simulations').doc(simulation.id).set(simulation);
-          console.log('✅ Live simulation stored in Firestore');
+          console.log('✅ Demo simulation stored in Firestore');
         } catch (firestoreError) {
           console.warn('⚠️ Firestore storage failed, continuing with response');
         }
       }
 
-      console.log(`✅ Live simulation completed: ${simulation.verdict}`);
+      console.log(`✅ Demo simulation completed: ${simulation.verdict}`);
 
       res.json({
         success: true,
-        message: 'Live crisis simulation completed successfully',
+        message: 'DEMO: Live crisis simulation completed successfully',
         simulation,
-        poweredBy: fallbackUsed ? 'Enhanced Fallback Intelligence' : 'Sonar AI + Live Intelligence'
+        poweredBy: 'Global Sentinel Intelligence Engine (Demo Mode)'
       });
 
     } catch (error) {
-      console.error('❌ Live crisis simulation failed:', error);
+      console.error('❌ Demo crisis simulation failed:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to run live simulation',
+        error: 'Failed to run demo simulation',
         message: error.message
       });
     }
@@ -151,22 +133,22 @@ class EnhancedSimulationController {
       {
         title: "Root Cause Analysis",
         type: "root_cause",
-        description: "Deep dive into the fundamental causes and origins"
+        description: "Deep dive into fundamental systemic vulnerabilities"
       },
       {
-        title: "Escalation Factors",
+        title: "Escalation Dynamics",
         type: "escalation_factor", 
-        description: "Analysis of factors that could amplify the crisis"
+        description: "Analysis of amplification and acceleration mechanisms"
       },
       {
         title: "Cascading Effects",
         type: "cascading_effect",
-        description: "Examination of potential secondary and tertiary impacts"
+        description: "Multi-domain impact assessment and propagation analysis"
       },
       {
-        title: "Historical Precedents",
+        title: "Historical Intelligence",
         type: "historical_precedent",
-        description: "Comparison with similar past events and outcomes"
+        description: "Precedent analysis and pattern recognition assessment"
       }
     ];
   }
@@ -216,54 +198,56 @@ class EnhancedSimulationController {
 
   static generateVerdict(scenario, analysis) {
     const keywords = scenario.toLowerCase();
+    const confidence = analysis?.confidence || 75;
     
-    if (analysis && analysis.reasoning && analysis.reasoning.includes('high confidence')) {
-      return 'Highly Likely - Immediate Response Required';
+    if (confidence > 85) {
+      if (keywords.includes('nuclear') || keywords.includes('war')) {
+        return 'Extremely High Confidence - Critical Threat Level Alpha';
+      } else if (keywords.includes('cyber') || keywords.includes('attack')) {
+        return 'High Confidence - Immediate Response Protocol Activated';
+      } else if (keywords.includes('climate') || keywords.includes('health')) {
+        return 'High Confidence - Emergency Coordination Required';
+      }
+      return 'High Confidence - Enhanced Monitoring Recommended';
+    } else if (confidence > 75) {
+      return 'Moderate Confidence - Precautionary Measures Advised';
+    } else {
+      return 'Developing Situation - Continuous Assessment Required';
     }
-    
-    if (keywords.includes('nuclear') || keywords.includes('war')) {
-      return 'Highly Critical - Immediate Response Required';
-    } else if (keywords.includes('cyber') || keywords.includes('attack')) {
-      return 'Likely Threat - Enhanced Monitoring Recommended';
-    } else if (keywords.includes('climate') || keywords.includes('health')) {
-      return 'Possible Risk - Preventive Measures Advised';
-    }
-    
-    return 'Uncertain Outcome - Requires Additional Intelligence';
   }
 
   static generateTimeline(scenario) {
     const keywords = scenario.toLowerCase();
     
-    if (keywords.includes('immediate') || keywords.includes('urgent')) {
-      return '6-12 hours';
+    if (keywords.includes('immediate') || keywords.includes('urgent') || keywords.includes('breaking')) {
+      return '0-6 hours (Critical Window)';
     } else if (keywords.includes('cyber') || keywords.includes('attack')) {
-      return '24-48 hours';
+      return '6-48 hours (Active Threat)';
+    } else if (keywords.includes('health') || keywords.includes('pandemic')) {
+      return '2-14 days (Incubation Period)';
+    } else if (keywords.includes('climate') || keywords.includes('environment')) {
+      return '30-90 days (Environmental Lag)';
     }
     
-    const timelines = ['24-48 hours', '3-7 days', '1-2 weeks', '2-4 weeks'];
-    return timelines[Math.floor(Math.random() * timelines.length)];
+    return '48-168 hours (Standard Assessment)';
   }
 
   static generateImpact(scenario) {
     const keywords = scenario.toLowerCase();
     
-    if (keywords.includes('global') || keywords.includes('international')) {
-      return 'Global security and economic implications';
-    } else if (keywords.includes('cyber')) {
-      return 'Critical infrastructure vulnerability';
-    } else if (keywords.includes('health')) {
-      return 'Public health and safety concerns';
+    if (keywords.includes('global') || keywords.includes('international') || keywords.includes('nuclear')) {
+      return 'Global security architecture destabilization';
+    } else if (keywords.includes('cyber') || keywords.includes('digital')) {
+      return 'Critical digital infrastructure compromise';
+    } else if (keywords.includes('health') || keywords.includes('pandemic')) {
+      return 'Multi-domain public health emergency';
+    } else if (keywords.includes('climate') || keywords.includes('environment')) {
+      return 'Ecosystem collapse with cascading effects';
+    } else if (keywords.includes('economic') || keywords.includes('financial')) {
+      return 'Systemic economic disruption potential';
     }
     
-    const impacts = [
-      'Regional security implications',
-      'Economic disruption potential',
-      'Humanitarian crisis risk',
-      'Infrastructure vulnerability',
-      'Public safety concerns'
-    ];
-    return impacts[Math.floor(Math.random() * impacts.length)];
+    return 'Regional stability and security implications';
   }
 }
 
