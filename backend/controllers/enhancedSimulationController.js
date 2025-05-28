@@ -30,7 +30,7 @@ class EnhancedSimulationController {
       } catch (error) {
         console.warn('⚠️ Sonar analysis failed, using enhanced fallback:', error.message);
         fallbackUsed = true;
-        sonarAnalysis = this.generateEnhancedFallback(scenario);
+        sonarAnalysis = EnhancedSimulationController.generateEnhancedFallback(scenario);
       }
 
       // Generate comprehensive simulation result
