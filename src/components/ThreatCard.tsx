@@ -54,12 +54,13 @@ const ThreatCard: React.FC<ThreatCardProps> = ({ threat, priority, onSimulate })
     simulateMutation.mutate({
       scenario: scenario
     }, {
-      onSuccess: (data) => {
+      onSuccess: (response) => {
+        const simulationData = response.data?.simulation;
         toast({
           title: "🧪 Simulation Complete!",
-          description: `Crisis scenario analyzed: ${data.simulation?.verdict || 'Analysis completed'}`,
+          description: `Crisis scenario analyzed: ${simulationData?.verdict || 'Analysis completed'}`,
         });
-        console.log('✅ Simulation completed:', data);
+        console.log('✅ Simulation completed:', simulationData);
       },
       onError: (error) => {
         toast({
