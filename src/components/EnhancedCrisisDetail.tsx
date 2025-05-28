@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,8 +61,9 @@ export const EnhancedCrisisDetail = ({ crisisStep, analysisType, onBack }: Enhan
         variant: "destructive",
       });
       
-      // Fix: Pass the correct parameters to generateFallbackAnalysis
-      await typeWriterEffect(SonarAnalysisService.generateFallbackAnalysis(crisisStep, analysisType), setAnalysis);
+      // Fix: Extract the analysis string from the fallback result
+      const fallbackResult = SonarAnalysisService.generateFallbackAnalysis(crisisStep, analysisType);
+      await typeWriterEffect(fallbackResult, setAnalysis);
       setSources(['fallback-intelligence.gov', 'crisis-analysis.org']);
       setConfidence(60);
       setHasAnalyzed(true);
