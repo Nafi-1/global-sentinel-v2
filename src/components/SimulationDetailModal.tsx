@@ -69,7 +69,7 @@ export const SimulationDetailModal: React.FC<SimulationDetailModalProps> = ({
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              delay={0.1}
+              transition={{ delay: 0.1 }}
               className="cyber-card p-4"
             >
               <div className="flex items-center space-x-2 mb-2">
@@ -84,7 +84,7 @@ export const SimulationDetailModal: React.FC<SimulationDetailModalProps> = ({
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              delay={0.2}
+              transition={{ delay: 0.2 }}
               className="cyber-card p-4"
             >
               <div className="flex items-center space-x-2 mb-2">
